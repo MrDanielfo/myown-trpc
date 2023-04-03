@@ -1,11 +1,49 @@
 import Head from 'next/head'
-import Image from 'next/image'
-import { Inter } from 'next/font/google'
-import styles from '@/styles/Home.module.css'
+import { useState, useRef, useEffect } from 'react';
+// import { Inter } from 'next/font/google'
+import { trpc } from '../utils/trpc';
+// import styles from '@/styles/Home.module.css'
 
-const inter = Inter({ subsets: ['latin'] })
+// const inter = Inter({ subsets: ['latin'] })
 
-export default function Home() {
+export default function IndexPage() {
+  const [username, setUsername] = useState('');
+  const [users, setUsers] = useState(null);
+  const inputRef = useRef(null);
+  const hello = trpc.hello.useQuery({ text: 'Murashama' });
+  const allUsers = trpc.allUsers.useQuery();
+  const getUser = trpc.userById.useQuery("1");
+  const sendUser = trpc.userCreate.useMutation();
+
+  useEffect(() => {
+    setUsers(allUsers?.data)
+  }, [allUsers?.data]);
+
+  if (!hello.data) {
+    return <div>Loading...</div>;
+  }
+
+  const handleName = (event) => {
+    // console.log(event.target.value);
+    setUsername(event.target.value);
+  }
+  // console.log(getUser.data);
+  const handleMutation = () => {
+    //  console.log(sendUser);
+     if (username && username.trim().length > 0) {
+      const id = Date.now()
+      sendUser.mutate({name: username})
+      // console.log(sendUser);
+      setUsername('');
+      inputRef.current.value = ''
+      // console.log(allUsers);
+      const newUser = {id, name: username}
+      setUsers([...users, newUser])
+     }
+     
+  }
+  // console.log(allUsers);
+
   return (
     <>
       <Head>
@@ -14,109 +52,20 @@ export default function Home() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <main className={styles.main}>
-        <div className={styles.description}>
-          <p>
-            Get started by editing&nbsp;
-            <code className={styles.code}>src/pages/index.tsx</code>
-          </p>
-          <div>
-            <a
-              href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              By{' '}
-              <Image
-                src="/vercel.svg"
-                alt="Vercel Logo"
-                className={styles.vercelLogo}
-                width={100}
-                height={24}
-                priority
-              />
-            </a>
-          </div>
-        </div>
+      <main>
+        <h1>Hola</h1>
+        <p>{hello.data.greeting}</p>
+        <h2>We are trying to reach...</h2>
+        <p>{getUser.data?.name}</p>
 
-        <div className={styles.center}>
-          <Image
-            className={styles.logo}
-            src="/next.svg"
-            alt="Next.js Logo"
-            width={180}
-            height={37}
-            priority
-          />
-          <div className={styles.thirteen}>
-            <Image
-              src="/thirteen.svg"
-              alt="13"
-              width={40}
-              height={31}
-              priority
-            />
-          </div>
-        </div>
-
-        <div className={styles.grid}>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2 className={inter.className}>
-              Docs <span>-&gt;</span>
-            </h2>
-            <p className={inter.className}>
-              Find in-depth information about Next.js features and&nbsp;API.
-            </p>
-          </a>
-
-          <a
-            href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2 className={inter.className}>
-              Learn <span>-&gt;</span>
-            </h2>
-            <p className={inter.className}>
-              Learn about Next.js in an interactive course with&nbsp;quizzes!
-            </p>
-          </a>
-
-          <a
-            href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2 className={inter.className}>
-              Templates <span>-&gt;</span>
-            </h2>
-            <p className={inter.className}>
-              Discover and deploy boilerplate example Next.js&nbsp;projects.
-            </p>
-          </a>
-
-          <a
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2 className={inter.className}>
-              Deploy <span>-&gt;</span>
-            </h2>
-            <p className={inter.className}>
-              Instantly deploy your Next.js site to a shareable URL
-              with&nbsp;Vercel.
-            </p>
-          </a>
-        </div>
+        <input ref={inputRef} type="text" onChange={handleName} name="username" placeholder='write your name' />
+        <button type="submit" onClick={handleMutation}>Enviar</button>
+        <p>{sendUser?.data?.name}</p>
+        <ul>
+          {users?.map((user, index) => (
+            <li key={index}>{user.name}</li>
+          ))}
+        </ul>
       </main>
     </>
   )
